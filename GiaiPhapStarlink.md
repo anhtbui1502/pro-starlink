@@ -32,10 +32,15 @@ Gói cước chính được tham số hóa tương tự dịch vụ Mysign. **T
 
 **OCS chỉ quản lý gói cước chính.** Gói cước chính được tổ chức thành **1 template** và **2 mã giá**:
 
-| STT | Mã giá (ExternalId) | Chu kỳ | Action khai báo | Chính sách mỗi chu kỳ |
-|---|---|---|---|---|
-| 1 | 11000000 | 30 ngày | Đấu nối, Gia hạn | - Trừ tiền vào tài khoản tiền (BalTypeId = 1) 1 lượng = đúng giá trị tham số CharSpecId = 11002<br>- Cộng lưu lượng vào tài khoản lưu lượng (BalTypeId = 11000) 1 lượng = đúng giá trị tham số CharSpecId = 11003 |
-| 2 | 11000001 | 1 tháng | Đấu nối, Gia hạn | - Trừ tiền vào tài khoản tiền (BalTypeId = 1) 1 lượng = đúng giá trị tham số CharSpecId = 11002<br>- Cộng lưu lượng vào tài khoản lưu lượng (BalTypeId = 11000) 1 lượng = đúng giá trị tham số CharSpecId = 11003 |
+<table>
+<thead>
+<tr><th>STT</th><th>Mã giá (ExternalId)</th><th>Chu kỳ</th><th>Action khai báo</th><th>Chính sách mỗi chu kỳ</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>11000000</td><td>30 ngày</td><td rowspan="2">Đấu nối, Gia hạn</td><td rowspan="2">- Trừ tiền vào tài khoản tiền (BalTypeId = 1) 1 lượng = đúng giá trị tham số CharSpecId = 11002<br>- Cộng lưu lượng vào tài khoản lưu lượng (BalTypeId = 11000) 1 lượng = đúng giá trị tham số CharSpecId = 11003</td></tr>
+<tr><td>2</td><td>11000001</td><td>1 tháng</td></tr>
+</tbody>
+</table>
 
 ## II. Tập lệnh giao tiếp Provisioning
 
