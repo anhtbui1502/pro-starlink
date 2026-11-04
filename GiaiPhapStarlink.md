@@ -229,10 +229,19 @@ Gói cước chính được tham số hóa tương tự dịch vụ Mysign. **T
 {
   "status": "0",
   "description": "Success",
-  "bucket": {
-    "id": "11000",
-    "remainingValue": { "amount": "1047552" }
-  }
+  "amount": "-1024",
+  "balanceResponseList": [
+    {
+      "balId": "82004299",
+      "balTypeId": "11001",
+      "value": "1020"
+    },
+    {
+      "balId": "82004399",
+      "balTypeId": "11000",
+      "value": "4"
+    }
+  ]
 }
 ```
 
@@ -257,7 +266,11 @@ Gói cước chính được tham số hóa tương tự dịch vụ Mysign. **T
 |---|---|---|
 | status | Mã lỗi | Int |
 | description | Mô tả lỗi | String |
-| bucket.remainingValue.amount | Lưu lượng còn lại trên tài khoản 11000 sau khi trừ | Long |
+| amount | Tổng lưu lượng đã trừ của giao dịch (giá trị âm, theo đơn vị lưu lượng thống nhất) | Long |
+| balanceResponseList | Danh sách các tài khoản lưu lượng của thuê bao sau khi trừ | List |
+| balanceResponseList.balId | Id tài khoản trên OCS (phân biệt các tài khoản cùng balTypeId) | Long |
+| balanceResponseList.balTypeId | Mã tài khoản: 11000 - tài khoản lưu lượng; 11001 - tài khoản Pool | Long |
+| balanceResponseList.value | Lưu lượng còn lại của tài khoản sau khi trừ | Long |
 
 **Mã lỗi:** Mã lỗi chung (mục 18) và:
 
