@@ -16,7 +16,17 @@ Trên OCS khai báo 3 loại tài khoản cho thuê bao Starlink:
 
 - VTT phải đồng nhất **1 đơn vị lưu lượng** khi truyền lên OCS.
 
-### 2. Triển khai gói cước
+### 2. Các tham số của gói cước chính
+
+Gói cước chính được tham số hóa tương tự dịch vụ Mysign. **Tại 1 thời điểm, mỗi gói cước chính của thuê bao có 3 tham số** sau:
+
+| STT | CharSpecId | Tên tham số | Ý nghĩa |
+|---|---|---|---|
+| 1 | 11001 | Loại gói cước | Lưu loại gói cước: LOCAL / GLOBAL |
+| 2 | 11002 | Số tiền trừ 1 chu kỳ | Số tiền trừ từ tài khoản tiền (BalTypeId = 1) cho 1 chu kỳ (30 ngày hoặc 1 tháng) |
+| 3 | 11003 | Lưu lượng 1 chu kỳ | Lưu lượng của 1 chu kỳ, được cộng reset vào tài khoản lưu lượng (BalTypeId = 11000) mỗi khi gia hạn |
+
+### 3. Triển khai gói cước
 
 Trên OCS khai báo 2 loại gói cước cho thuê bao Starlink:
 
@@ -27,7 +37,7 @@ Trên OCS khai báo 2 loại gói cước cho thuê bao Starlink:
 
 **Kết luận:** Để đáp ứng chính sách của thuê bao Starlink, trên OCS chỉ cần khai báo **2 template** (1 template gói cước chính, 1 template gói cước phụ).
 
-### 3. Phương pháp triển khai gói cước
+### 4. Phương pháp triển khai gói cước
 
 Có 2 phương pháp triển khai gói cước trên OCS:
 
@@ -39,7 +49,7 @@ Có 2 phương pháp triển khai gói cước trên OCS:
 
 **Lưu ý:** Mỗi cách tương ứng với một tập lệnh giao tiếp khác nhau ==> **cần chốt giải pháp** trước khi xây dựng tập lệnh Provisioning.
 
-**Chốt giải pháp:** Triển khai theo **Cách 2** (mỗi loại gói triển khai thành nhiều offer, lưu lượng và số tiền trừ khai báo trong gói qua Product Catalog). Tập lệnh Provisioning ở mục II được xây dựng theo cách này.
+**Chốt giải pháp:** Triển khai theo **Cách 1** (mỗi loại gói chỉ triển khai 1 offer, lưu lượng và số tiền trừ được tham số hóa tương tự dịch vụ Mysign, chi tiết tham số tại mục I.2).
 
 ## II. Tập lệnh giao tiếp Provisioning
 
