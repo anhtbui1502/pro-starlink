@@ -54,7 +54,7 @@ Gói cước chính được tham số hóa tương tự dịch vụ Mysign. **T
   - Số tiền cam kết đóng trước (CĐT) `initAmount`.
 - OCS tạo thuê bao ở trạng thái hoạt động, lưu 3 tham số của gói chính, tạo tài khoản tiền (BalTypeId = 1) với số tiền = `initAmount`.
 - OCS thực hiện ngay chu kỳ đầu tiên của gói chính: trừ tài khoản tiền 1 lượng = tham số 11002, cộng tài khoản lưu lượng (BalTypeId = 11000) 1 lượng = tham số 11003, hạn chu kỳ = thời điểm đấu nối + 30 ngày (mã giá 11000000) hoặc + 1 tháng (mã giá 11000001).
-- Các chu kỳ tiếp theo OCS tự động gia hạn theo tham số hiện tại của gói chính (xem mục 10).
+- Các chu kỳ tiếp theo OCS tự động gia hạn theo tham số hiện tại của gói chính (xem mục 9).
 - Đề xuất: `initAmount` phải ≥ tham số 11002, nếu không OCS trả lỗi.
 
 **Request:** `POST http://ipaddress:port/processFlowManagement/v4/processFlow/`
@@ -118,7 +118,7 @@ Gói cước chính được tham số hóa tương tự dịch vụ Mysign. **T
 | errorCode | Mã lỗi | Int |
 | description | Mô tả lỗi | String |
 
-**Mã lỗi:** Mã lỗi chung (mục 19) và:
+**Mã lỗi:** Mã lỗi chung (mục 18) và:
 
 | Description | Mô tả |
 |---|---|
@@ -136,7 +136,7 @@ Gói cước chính được tham số hóa tương tự dịch vụ Mysign. **T
 
 - Khách hàng nạp thêm tiền vào tài khoản tiền (BalTypeId = 1) để gia hạn gói chính các chu kỳ tiếp theo.
 - OCS cộng tiền vào tài khoản tiền, lưu giao dịch theo `requestId` để phục vụ tra cứu và rollback (không quá 30 ngày).
-- Trường hợp thuê bao đang ở trạng thái hết CĐT (gói chính chưa gia hạn được), sự kiện nạp tiền trên OCS sẽ tự động gia hạn gói chính nếu tài khoản tiền sau khi nạp đủ (≥ tham số 11002): trừ tài khoản tiền = tham số 11002, reset tài khoản 11000 = tham số 11003, chu kỳ mới bắt đầu từ thời điểm nạp tiền. OCS sinh event `RENEW_SUCCESS` (mục 10) để Provisioning mở lại băng thông.
+- Trường hợp thuê bao đang ở trạng thái hết CĐT (gói chính chưa gia hạn được), sự kiện nạp tiền trên OCS sẽ tự động gia hạn gói chính nếu tài khoản tiền sau khi nạp đủ (≥ tham số 11002): trừ tài khoản tiền = tham số 11002, reset tài khoản 11000 = tham số 11003, chu kỳ mới bắt đầu từ thời điểm nạp tiền. OCS sinh event `RENEW_SUCCESS` (mục 9) để Provisioning mở lại băng thông.
 
 **Request:** `POST http://ipaddress:port/prepayBalanceManagement/v4/topupBalance`
 
@@ -187,7 +187,7 @@ Gói cước chính được tham số hóa tương tự dịch vụ Mysign. **T
 | description | Mô tả lỗi | String |
 | bucket.remainingValue.amount | Số dư tài khoản tiền sau khi nạp | Long |
 
-**Mã lỗi:** Mã lỗi chung (mục 19) và:
+**Mã lỗi:** Mã lỗi chung (mục 18) và:
 
 | Description | Mô tả |
 |---|---|
@@ -203,7 +203,7 @@ Gói cước chính được tham số hóa tương tự dịch vụ Mysign. **T
 - Thứ tự trừ (đề xuất):
   1. Tài khoản lưu lượng (BalTypeId = 11000): gồm lưu lượng chu kỳ gói chính và lưu lượng Add-On đã cộng dồn.
   2. Nếu thuê bao là thành viên nhóm Pool: trừ tiếp vào tài khoản chia sẻ Pool (BalTypeId = 11001) trong hạn mức được cấp.
-- Nếu tổng lưu lượng còn lại nhỏ hơn lượng cần trừ: OCS trừ về 0 (không rollback vì lưu lượng đã thực tế sử dụng), trả kết quả thành công kèm số dư, đồng thời sinh event hết lưu lượng (mục 10) và CDR cảnh báo (mục 18).
+- Nếu tổng lưu lượng còn lại nhỏ hơn lượng cần trừ: OCS trừ về 0 (không rollback vì lưu lượng đã thực tế sử dụng), trả kết quả thành công kèm số dư, đồng thời sinh event hết lưu lượng (mục 9) và CDR cảnh báo (mục 17).
 - OCS lưu giao dịch theo `requestId` để phục vụ tra cứu và rollback.
 
 **Request:** `POST http://ipaddress:port/prepayBalanceManagement/v4/balanceAdjust/`
@@ -259,7 +259,7 @@ Gói cước chính được tham số hóa tương tự dịch vụ Mysign. **T
 | description | Mô tả lỗi | String |
 | bucket.remainingValue.amount | Lưu lượng còn lại trên tài khoản 11000 sau khi trừ | Long |
 
-**Mã lỗi:** Mã lỗi chung (mục 19) và:
+**Mã lỗi:** Mã lỗi chung (mục 18) và:
 
 | Description | Mô tả |
 |---|---|
@@ -361,7 +361,7 @@ Gói cước chính được tham số hóa tương tự dịch vụ Mysign. **T
 | mainProductInfoResponse.name | Tên gói chính | String |
 | mainProductInfoResponse.effDate / expDate | Bắt đầu / kết thúc chu kỳ hiện tại của gói chính | yyyy/MM/dd HH:mm:ss |
 
-**Mã lỗi:** Mã lỗi chung (mục 19).
+**Mã lỗi:** Mã lỗi chung (mục 18).
 
 ---
 
@@ -434,7 +434,7 @@ Với giải pháp tham số hóa, nghiệp vụ đổi gói chính gồm 2 trư
 | errorCode | Mã lỗi | Int |
 | description | Mô tả lỗi | String |
 
-**Mã lỗi:** Mã lỗi chung (mục 19) và:
+**Mã lỗi:** Mã lỗi chung (mục 18) và:
 
 | Description | Mô tả |
 |---|---|
@@ -500,7 +500,7 @@ Với giải pháp tham số hóa, nghiệp vụ đổi gói chính gồm 2 trư
 | errorCode | Mã lỗi | Int |
 | description | Mô tả lỗi | String |
 
-**Mã lỗi:** Mã lỗi chung (mục 19) và:
+**Mã lỗi:** Mã lỗi chung (mục 18) và:
 
 | Description | Mô tả |
 |---|---|
@@ -564,7 +564,7 @@ Với giải pháp tham số hóa, nghiệp vụ đổi gói chính gồm 2 trư
 | characteristicList.stringValue / longValue | Giá trị tham số | String / Long |
 | characteristicList.state | Trạng thái tham số (1 - hiệu lực) | Int |
 
-**Mã lỗi:** Mã lỗi chung (mục 19).
+**Mã lỗi:** Mã lỗi chung (mục 18).
 
 ---
 
@@ -575,7 +575,7 @@ Với giải pháp tham số hóa, nghiệp vụ đổi gói chính gồm 2 trư
 - Gói Add-On **không quản lý trên OCS**. Sau khi kinh doanh thu tiền mặt của khách hàng, Provisioning gọi lệnh lên OCS để **cộng lưu lượng** của gói Add-On vào tài khoản lưu lượng (BalTypeId = 11000).
 - Cho phép gọi nhiều lần trong chu kỳ, lưu lượng được cộng dồn. Hạn sử dụng giữ nguyên = cuối chu kỳ hiện tại của gói chính; khi gói chính gia hạn sang chu kỳ mới thì lưu lượng được reset.
 - Đề xuất: chỉ cho phép cộng khi gói chính đang trong chu kỳ hiệu lực (không ở trạng thái hết CĐT).
-- OCS lưu giao dịch theo `requestId` để tra cứu và rollback (mục 9.1). Sau khi cộng thành công, nếu thuê bao đang bị bóp băng thông do hết lưu lượng, OCS sinh event `DATA_AVAILABLE` (mục 10).
+- OCS lưu giao dịch theo `requestId` để tra cứu và rollback (mục 8.1). Sau khi cộng thành công, nếu thuê bao đang bị bóp băng thông do hết lưu lượng, OCS sinh event `DATA_AVAILABLE` (mục 9).
 
 **Request:** `POST http://ipaddress:port/prepayBalanceManagement/v4/balanceAdjust/`
 
@@ -621,7 +621,7 @@ Với giải pháp tham số hóa, nghiệp vụ đổi gói chính gồm 2 trư
 | status | Mã lỗi | Int |
 | description | Mô tả lỗi | String |
 
-**Mã lỗi:** Mã lỗi chung (mục 19) và:
+**Mã lỗi:** Mã lỗi chung (mục 18) và:
 
 | Description | Mô tả |
 |---|---|
@@ -675,75 +675,19 @@ Với giải pháp tham số hóa, nghiệp vụ đổi gói chính gồm 2 trư
 | errorCode | Mã lỗi | Int |
 | description | Mô tả lỗi | String |
 
-**Mã lỗi:** Mã lỗi chung (mục 19).
+**Mã lỗi:** Mã lỗi chung (mục 18).
 
 ---
 
-### 8. Chặn/mở thuê bao Starlink theo yêu cầu
-
-**Mô tả nghiệp vụ:**
-
-- Chặn: khách hàng tạm dừng dịch vụ, thuê bao chuyển về trạng thái chặn 1 chiều theo yêu cầu. OCS từ chối các lệnh tác động tài khoản (trừ lưu lượng, đổi gói, cộng lưu lượng Add-On, lệnh nhóm), chỉ cho phép tra cứu, mở chặn và hủy thuê bao.
-- Mở: thuê bao trở về trạng thái hoạt động bình thường.
-- OCS sinh CDR thay đổi trạng thái (mục 18).
-
-**Request:** `POST http://ipaddress:port/processFlowManagement/v4/processFlow/`
-
-```json
-{
-  "processFlowSpecification": "BlockOrUnblock",
-  "characteristic": [
-    { "name": "msisdn", "value": "SL0000123456" },
-    { "name": "blockOrUnblockType", "value": "4" }
-  ]
-}
-```
-
-**Response:**
-
-```json
-{
-  "processFlowSpecification": "BlockOrUnblock",
-  "processFlowDate": "2026/11/20 10:00:00",
-  "characteristic": [
-    { "name": "errorCode", "value": "0" },
-    { "name": "description", "value": "Success" }
-  ]
-}
-```
-
-**Mô tả Input:**
-
-| Tên trường | Ý nghĩa | Định dạng | Bắt buộc |
-|---|---|---|---|
-| msisdn | Định danh thuê bao | Xâu ký tự < 30 | Có |
-| blockOrUnblockType | 4: chặn 1 chiều theo yêu cầu; 6: mở chặn 1 chiều theo yêu cầu | Int | Có |
-
-**Mô tả Output:**
-
-| Tên trường | Ý nghĩa | Định dạng |
-|---|---|---|
-| errorCode | Mã lỗi | Int |
-| description | Mô tả lỗi | String |
-
-**Mã lỗi:** Mã lỗi chung (mục 19) và:
-
-| Description | Mô tả |
-|---|---|
-| SUB_SUSPENDING_4505 | Chặn khi thuê bao đã ở trạng thái chặn 1 chiều |
-| SUB_WRONG_STATE_4502 | Mở chặn khi thuê bao không ở trạng thái chặn 1 chiều |
-
----
-
-### 9. Điều chỉnh giao dịch
+### 8. Điều chỉnh giao dịch
 
 Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực tiếp tài khoản.
 
-#### 9.1. Rollback giao dịch
+#### 8.1. Rollback giao dịch
 
 **Mô tả nghiệp vụ:**
 
-- Rollback giao dịch đã thành công trong thời gian không quá 30 ngày, theo `originalRequestId`, áp dụng cho: nạp tiền (mục 2), trừ lưu lượng (mục 3), cộng lưu lượng Add-On (mục 6) và cộng lưu lượng Pool (mục 11.2).
+- Rollback giao dịch đã thành công trong thời gian không quá 30 ngày, theo `originalRequestId`, áp dụng cho: nạp tiền (mục 2), trừ lưu lượng (mục 3), cộng lưu lượng Add-On (mục 6) và cộng lưu lượng Pool (mục 10.2).
 - Provisioning đảm bảo requestId giữa các lệnh là duy nhất.
 
 **Request:** `POST http://ipaddress:port/processFlowManagement/v4/processFlow/`
@@ -793,7 +737,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 | errorCode | Mã lỗi | Int |
 | description | Mô tả lỗi | String |
 
-**Mã lỗi:** Mã lỗi chung (mục 19) và:
+**Mã lỗi:** Mã lỗi chung (mục 18) và:
 
 | Description | Mô tả |
 |---|---|
@@ -803,7 +747,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 | WS_TRANS_IS_ROLLBACKED | Giao dịch gốc đã được rollback |
 | WS_NOT_PERMIT_ROLLBACK | Tài khoản không đủ số dư để rollback giao dịch cộng tiền / cộng lưu lượng |
 
-#### 9.2. Điều chỉnh tài khoản (ModBalance)
+#### 8.2. Điều chỉnh tài khoản (ModBalance)
 
 **Mô tả nghiệp vụ:**
 
@@ -861,7 +805,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 | status | Mã lỗi | Int |
 | description | Mô tả lỗi | String |
 
-**Mã lỗi:** Mã lỗi chung (mục 19) và:
+**Mã lỗi:** Mã lỗi chung (mục 18) và:
 
 | Description | Mô tả |
 |---|---|
@@ -869,7 +813,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 
 ---
 
-### 10. Job/Event nghiệp vụ hết lưu lượng hoặc hết CĐT
+### 9. Job/Event nghiệp vụ hết lưu lượng hoặc hết CĐT
 
 **Mô tả nghiệp vụ:** Đây là xử lý chủ động phía OCS (không phải lệnh Provisioning gọi vào):
 
@@ -920,17 +864,17 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 
 ---
 
-### 11. Đăng ký gói Pool Starlink
+### 10. Đăng ký gói Pool Starlink
 
 **Mô tả nghiệp vụ:**
 
 - Gói Pool **không quản lý trên OCS**. Sau khi kinh doanh thu tiền mặt của khách hàng doanh nghiệp, Provisioning gọi lên OCS để cộng lưu lượng Pool vào **tài khoản Pool (BalTypeId = 11001)** của thuê bao chủ nhóm.
 - Tương tự nhóm doanh nghiệp của Mysign, tài khoản Pool được giữ trên 1 **thuê bao chủ nhóm (thuê bao ảo)**, định danh đề xuất theo định dạng `SL_{mã nhóm/mã hợp đồng}`. Quy trình:
-  1. Đấu nối thuê bao chủ nhóm (mục 11.1) — chỉ thực hiện 1 lần.
-  2. Cộng lưu lượng Pool vào tài khoản 11001 của thuê bao chủ nhóm (mục 11.2) — mỗi lần khách hàng mua gói Pool, lưu lượng được cộng dồn.
-  3. Tạo nhóm và thêm thành viên để chia sẻ lưu lượng Pool (mục 12, 15).
+  1. Đấu nối thuê bao chủ nhóm (mục 10.1) — chỉ thực hiện 1 lần.
+  2. Cộng lưu lượng Pool vào tài khoản 11001 của thuê bao chủ nhóm (mục 10.2) — mỗi lần khách hàng mua gói Pool, lưu lượng được cộng dồn.
+  3. Tạo nhóm và thêm thành viên để chia sẻ lưu lượng Pool (mục 11, 15).
 
-#### 11.1. Đấu nối thuê bao chủ nhóm Pool
+#### 10.1. Đấu nối thuê bao chủ nhóm Pool
 
 **Mô tả nghiệp vụ:** Dùng lệnh đấu nối (mục 1) với mã giá gói chính 11000000, tham số 11002 = 0 và 11003 = 0 (đề xuất), để thuê bao chủ nhóm không bị trừ tiền và không được cộng lưu lượng theo chu kỳ.
 
@@ -994,12 +938,12 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 
 **Mã lỗi:** như mục 1.
 
-#### 11.2. Cộng lưu lượng Pool
+#### 10.2. Cộng lưu lượng Pool
 
 **Mô tả nghiệp vụ:**
 
 - Cộng dồn lưu lượng của gói Pool khách hàng đã mua vào tài khoản Pool (11001) của thuê bao chủ nhóm, kèm hạn sử dụng của lưu lượng Pool.
-- OCS lưu giao dịch theo `requestId` để tra cứu và rollback (mục 9.1).
+- OCS lưu giao dịch theo `requestId` để tra cứu và rollback (mục 8.1).
 
 **Request:** `POST http://ipaddress:port/prepayBalanceManagement/v4/balanceAdjust/`
 
@@ -1049,7 +993,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 | status | Mã lỗi | Int |
 | description | Mô tả lỗi | String |
 
-**Mã lỗi:** Mã lỗi chung (mục 19) và:
+**Mã lỗi:** Mã lỗi chung (mục 18) và:
 
 | Description | Mô tả |
 |---|---|
@@ -1057,7 +1001,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 
 ---
 
-### 12. Tạo nhóm thuê bao Starlink
+### 11. Tạo nhóm thuê bao Starlink
 
 **Mô tả nghiệp vụ:**
 
@@ -1138,7 +1082,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 | description | Mô tả lỗi | String |
 | groupId | Id nhóm do OCS sinh | Long |
 
-**Mã lỗi:** Mã lỗi chung (mục 19) và:
+**Mã lỗi:** Mã lỗi chung (mục 18) và:
 
 | Description | Mô tả |
 |---|---|
@@ -1149,7 +1093,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 
 ---
 
-### 13. Tra cứu nhóm và thành viên Starlink
+### 12. Tra cứu nhóm và thành viên Starlink
 
 **Mô tả nghiệp vụ:**
 
@@ -1231,7 +1175,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 | listMember.remaining | Lưu lượng còn lại | Long |
 | listMember.expDate | Hạn sử dụng tài khoản chia sẻ của thành viên | yyyy/MM/dd HH:mm:ss |
 
-**Mã lỗi:** Mã lỗi chung (mục 19) và:
+**Mã lỗi:** Mã lỗi chung (mục 18) và:
 
 | Description | Mô tả |
 |---|---|
@@ -1239,7 +1183,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 
 ---
 
-### 14. Thêm thành viên vào nhóm Starlink
+### 13. Thêm thành viên vào nhóm Starlink
 
 **Mô tả nghiệp vụ:**
 
@@ -1302,7 +1246,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 | errorCode | Mã lỗi | Int |
 | description | Mô tả lỗi | String |
 
-**Mã lỗi:** Mã lỗi chung (mục 19) và:
+**Mã lỗi:** Mã lỗi chung (mục 18) và:
 
 | Description | Mô tả |
 |---|---|
@@ -1314,7 +1258,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 
 ---
 
-### 15. Hủy thành viên khỏi nhóm Starlink
+### 14. Hủy thành viên khỏi nhóm Starlink
 
 **Mô tả nghiệp vụ:**
 
@@ -1367,7 +1311,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 | errorCode | Mã lỗi | Int |
 | description | Mô tả lỗi | String |
 
-**Mã lỗi:** Mã lỗi chung (mục 19) và:
+**Mã lỗi:** Mã lỗi chung (mục 18) và:
 
 | Description | Mô tả |
 |---|---|
@@ -1377,7 +1321,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 
 ---
 
-### 16. Cập nhật hạn mức thành viên nhóm Starlink
+### 15. Cập nhật hạn mức thành viên nhóm Starlink
 
 **Mô tả nghiệp vụ:**
 
@@ -1433,7 +1377,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 | errorCode | Mã lỗi | Int |
 | description | Mô tả lỗi | String |
 
-**Mã lỗi:** Mã lỗi chung (mục 19) và:
+**Mã lỗi:** Mã lỗi chung (mục 18) và:
 
 | Description | Mô tả |
 |---|---|
@@ -1443,7 +1387,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 
 ---
 
-### 17. Tra cứu báo cáo sử dụng Pool Starlink
+### 16. Tra cứu báo cáo sử dụng Pool Starlink
 
 **Mô tả nghiệp vụ:**
 
@@ -1522,7 +1466,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 | memberUsageList.consumed | Lưu lượng đã sử dụng | Long |
 | memberUsageList.remaining | Lưu lượng còn lại | Long |
 
-**Mã lỗi:** Mã lỗi chung (mục 19) và:
+**Mã lỗi:** Mã lỗi chung (mục 18) và:
 
 | Description | Mô tả |
 |---|---|
@@ -1531,7 +1475,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 
 ---
 
-### 18. CDR cảnh báo dung lượng, thời hạn gói và trạng thái chặn thuê bao Starlink
+### 17. CDR cảnh báo dung lượng, thời hạn gói và trạng thái chặn thuê bao Starlink
 
 **Mô tả nghiệp vụ:**
 
@@ -1562,7 +1506,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 
 ---
 
-### 19. Mã lỗi chung
+### 18. Mã lỗi chung
 
 Áp dụng cho tất cả các lệnh ở trên (mã lỗi đặc thù được nêu trong từng lệnh):
 
