@@ -4,16 +4,16 @@
 
 ### 1. Triển khai tài khoản
 
-Trên OCS khai báo 2 loại tài khoản cho thuê bao Starlink:
+Trên OCS khai báo 3 loại tài khoản cho thuê bao Starlink:
 
 | STT | Loại tài khoản | BalTypeId | Mục đích sử dụng |
 |---|---|---|---|
-| 1 | Tài khoản tiền | 1 | - Lưu cước đóng trước<br>- Gia hạn hàng tháng gói chính<br>- Nạp tiền để mua gói Add-On |
-| 2 | Tài khoản lưu lượng | X | - Lưu trữ lưu lượng hàng tháng của gói chính<br>- Cộng dồn lưu lượng các gói Add-On |
+| 1 | Tài khoản tiền | 1 | - Lưu cước đóng trước<br>- Gia hạn hàng tháng gói chính |
+| 2 | Tài khoản lưu lượng | 11000 | - Lưu trữ lưu lượng hàng tháng của gói chính<br>- Cộng dồn lưu lượng các gói Add-On |
+| 3 | Tài khoản Pool | 11001 | - Lưu trữ lưu lượng của gói Pool |
 
 **Lưu ý:**
 
-- Giá trị BalTypeId = X của tài khoản lưu lượng sẽ được xác định khi triển khai.
 - VTT phải đồng nhất **1 đơn vị lưu lượng** khi truyền lên OCS.
 
 ### 2. Triển khai gói cước
@@ -94,7 +94,7 @@ Có 2 phương pháp triển khai gói cước trên OCS:
 
 - Provisioning gửi lệnh đấu nối thuê bao Starlink lên OCS với mã gói cước chính (Local/Global là các mã giá khác nhau) và số tiền cam kết đóng trước (CĐT).
 - OCS tạo thuê bao ở trạng thái hoạt động, tạo tài khoản tiền (BalTypeId = 1) với số tiền = `initAmount`.
-- OCS thực hiện ngay chu kỳ đầu tiên của gói chính: trừ X đồng (giá gói/chu kỳ, khai báo trong gói) từ tài khoản tiền, cộng Y (lưu lượng/chu kỳ) vào tài khoản lưu lượng (BalTypeId = X), hạn chu kỳ = thời điểm đấu nối + 30 ngày.
+- OCS thực hiện ngay chu kỳ đầu tiên của gói chính: trừ X đồng (giá gói/chu kỳ, khai báo trong gói) từ tài khoản tiền, cộng Y (lưu lượng/chu kỳ) vào tài khoản lưu lượng (BalTypeId = 11000), hạn chu kỳ = thời điểm đấu nối + 30 ngày.
 - Các chu kỳ tiếp theo OCS tự động gia hạn bằng tài khoản tiền (xem mục 11).
 - Đề xuất: `initAmount` phải ≥ giá 1 chu kỳ của gói chính, nếu không OCS trả lỗi.
 - Lệnh này cũng dùng để đấu nối thuê bao chủ nhóm pool (xem mục 12).
@@ -224,7 +224,7 @@ Có 2 phương pháp triển khai gói cước trên OCS:
 **Mô tả nghiệp vụ:**
 
 - Provisioning tổng hợp lưu lượng sử dụng của thuê bao (từ hệ thống Starlink) và gửi lệnh trừ lưu lượng lên OCS theo đơn vị lưu lượng đã thống nhất.
-- OCS trừ lưu lượng trên tài khoản lưu lượng (BalTypeId = X).
+- OCS trừ lưu lượng trên tài khoản lưu lượng (BalTypeId = 11000).
 - Nếu lưu lượng còn lại nhỏ hơn lượng cần trừ: OCS trừ về 0 (không rollback vì lưu lượng đã thực tế sử dụng), trả kết quả thành công kèm số dư, đồng thời sinh event hết lưu lượng (mục 11) và CDR cảnh báo (mục 19).
 - OCS lưu giao dịch theo `requestId` để phục vụ tra cứu và rollback.
 
@@ -252,7 +252,7 @@ Có 2 phương pháp triển khai gói cước trên OCS:
   "status": "0",
   "description": "Success",
   "bucket": {
-    "id": "X",
+    "id": "11000",
     "remainingValue": { "amount": "50176" }
   }
 }
@@ -330,7 +330,7 @@ Có 2 phương pháp triển khai gói cước trên OCS:
             "expDate": "2100/01/01 00:00:00"
           },
           {
-            "balType": "X",
+            "balType": "11000",
             "balId": "54990702",
             "name": "Tai khoan luu luong",
             "value": "51200",
@@ -718,7 +718,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
   "requestId": "SL_ADJ_0001",
   "channel": "STARLINK",
   "partyAccount": { "id": "SL0000123456" },
-  "bucket": { "id": "X" },
+  "bucket": { "id": "11000" },
   "amount": 10240,
   "balance": "",
   "balId": "",
@@ -746,7 +746,7 @@ Gồm 2 lệnh: rollback giao dịch theo requestId và điều chỉnh trực t
 | requestId | Mã giao dịch | String | Có |
 | channel | Kênh gửi lệnh, = STARLINK | String | Có |
 | partyAccount.id | Định danh thuê bao | Xâu ký tự < 30 | Có |
-| bucket.id | Mã tài khoản cần điều chỉnh (1: tiền, X: lưu lượng) | Long | Có |
+| bucket.id | Mã tài khoản cần điều chỉnh (1: tiền, 11000: lưu lượng, 11001: Pool) | Long | Có |
 | balId | Id tài khoản trên OCS (phân biệt các tài khoản cùng balType) | Long | Không |
 | amount | Lượng điều chỉnh (+ cộng, - trừ) | Long | Không |
 | balance | Set số dư tài khoản | Long | Không |
