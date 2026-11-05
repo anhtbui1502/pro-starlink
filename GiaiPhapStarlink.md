@@ -285,7 +285,7 @@ Gói cước chính được tham số hóa tương tự dịch vụ Mysign. **T
 **Mô tả nghiệp vụ:**
 
 - Provisioning/CSKH tra cứu thông tin thuê bao: trạng thái, số dư tài khoản tiền, lưu lượng còn lại (tài khoản 11000, tài khoản chia sẻ Pool 11001 nếu là thành viên nhóm), thông tin gói chính và hạn chu kỳ hiện tại.
-- Tham số gói chính (11001, 11002, 11003) tra cứu bằng lệnh tại mục 5.3.
+- Tham số gói chính (11001, 11002, 11003) tra cứu bằng lệnh tại mục 5.3.1.
 
 **Request:** `POST http://ipaddress:port/processFlowManagement/v4/processFlow?fields=subInfo,balanceResponseList`
 
@@ -380,39 +380,38 @@ Gói cước chính được tham số hóa tương tự dịch vụ Mysign. **T
 
 ### 5. Đổi gói cước chính
 
-Với giải pháp tham số hóa, nghiệp vụ đổi gói chính gồm 2 trường hợp:
+Với giải pháp tham số hóa, đổi gói cước chính là thay đổi bộ 3 tham số của gói chính (11001 - loại gói LOCAL/GLOBAL, 11002 - số tiền trừ 1 chu kỳ, 11003 - lưu lượng 1 chu kỳ) bằng lệnh `UpdateListParameter`. Gồm các trường hợp:
 
-- Đổi loại gói (LOCAL/GLOBAL), giá hoặc lưu lượng: **thay đổi tham số** gói chính (mục 5.1).
-- Đổi chu kỳ (30 ngày ↔ 1 tháng): **đổi mã giá** gói chính (mục 5.2).
+- Thay đổi tham số có hiệu lực ngay (mục 5.1).
+- Thay đổi tham số có hiệu lực trong tương lai (mục 5.2).
+- Truy vấn và chỉnh sửa tham số bất kỳ khi gặp sự cố (mục 5.3).
 
-#### 5.1. Thay đổi tham số gói cước chính
+Giá trị `type` của lệnh `UpdateListParameter`: 0 - truy vấn; 1 - thêm bộ tham số; 2 - chỉnh sửa tham số.
+
+#### 5.1. Thay đổi tham số gói cước chính có hiệu lực ngay
 
 **Mô tả nghiệp vụ:**
 
-- Thay đổi 1 hoặc nhiều tham số 11001, 11002, 11003 của gói chính.
-- Tham số mới được áp dụng từ chu kỳ gia hạn tiếp theo.
+- Chỉnh sửa giá trị bộ tham số hiện tại của gói chính. Provisioning truyền đủ 3 tham số 11001, 11002, 11003 kèm mã giá gói chính, **không truyền id** của tham số.
+- Lệnh chỉ thay đổi tham số, không trừ tiền và không cộng lưu lượng. Tham số mới tự động được áp dụng cho chu kỳ gia hạn tiếp theo (tháng mới / 30 ngày mới).
+- Trường hợp cần điều chỉnh cộng/trừ tiền hoặc lưu lượng ngay trong chu kỳ hiện tại: dùng lệnh Điều chỉnh tài khoản (mục 8.2).
+- Nếu thuê bao đang có 2 bộ tham số (đã có bộ tham số chờ hiệu lực trong tương lai, mục 5.2), OCS không cho phép thay đổi và trả lỗi.
 
-**Request:** `PATCH http://ipaddress:port/accountManagement/v4/account/{msisdn}`
+**Request:** `POST http://ipaddress:port/processFlowManagement/v4/processFlow`
 
 ```json
 {
-  "requestDate": "2026/11/15 10:00:00",
-  "channel": "STARLINK",
-  "operations": [
+  "processFlowSpecification": "UpdateListParameter",
+  "characteristic": [
+    { "name": "msisdn", "value": "SL0000123456" },
+    { "name": "type", "value": "2" },
     {
-      "op": "addOrReplace",
-      "path": "/characteristic?characteristic.charSpecId=11001",
-      "value": { "stringValue": "GLOBAL" }
-    },
-    {
-      "op": "addOrReplace",
-      "path": "/characteristic?characteristic.charSpecId=11002",
-      "value": { "longValue": 5000000 }
-    },
-    {
-      "op": "addOrReplace",
-      "path": "/characteristic?characteristic.charSpecId=11003",
-      "value": { "longValue": 2097152 }
+      "name": "characteristicList",
+      "value": [
+        { "charSpecId": "11001", "productExternalId": "11000000", "stringValue": "GLOBAL" },
+        { "charSpecId": "11002", "productExternalId": "11000000", "longValue": "5000000" },
+        { "charSpecId": "11003", "productExternalId": "11000000", "longValue": "2097152" }
+      ]
     }
   ]
 }
@@ -422,72 +421,7 @@ Với giải pháp tham số hóa, nghiệp vụ đổi gói chính gồm 2 trư
 
 ```json
 {
-  "errorCode": "0",
-  "description": "Success"
-}
-```
-
-**Mô tả Input:**
-
-| Tên trường | Ý nghĩa | Định dạng | Bắt buộc |
-|---|---|---|---|
-| msisdn | Định danh thuê bao, truyền trên URL | Xâu ký tự < 30 | Có |
-| requestDate | Thời điểm thực hiện lệnh (không quá 5 phút so với thời điểm OCS nhận bản tin) | yyyy/MM/dd HH:mm:ss | Có |
-| channel | Kênh gửi lệnh, cố định = STARLINK | String | Có |
-| operations | Danh sách tham số cần thay đổi | List | Có |
-| operations.op | Cố định = addOrReplace | String | Có |
-| operations.path | Tham số cần thay đổi: `/characteristic?characteristic.charSpecId={11001 / 11002 / 11003}` | String | Có |
-| operations.value.stringValue | Giá trị mới của tham số 11001: LOCAL / GLOBAL | String | Có (với 11001) |
-| operations.value.longValue | Giá trị mới của tham số 11002 (VNĐ) / 11003 (đơn vị lưu lượng thống nhất) | Long ≥ 0 | Có (với 11002, 11003) |
-
-**Mô tả Output:**
-
-| Tên trường | Ý nghĩa | Định dạng |
-|---|---|---|
-| errorCode | Mã lỗi | Int |
-| description | Mô tả lỗi | String |
-
-**Mã lỗi:** Mã lỗi chung (mục 18) và:
-
-| Description | Mô tả |
-|---|---|
-| WS_CHARACTERISTIC_INVALID | charSpecId không thuộc gói chính hoặc giá trị không hợp lệ |
-
-#### 5.2. Đổi mã giá gói cước chính (đổi chu kỳ)
-
-**Mô tả nghiệp vụ:**
-
-- Đổi giữa 2 mã giá 11000000 (chu kỳ 30 ngày) và 11000001 (chu kỳ 1 tháng).
-- Có thể truyền kèm tham số mới; không truyền thì OCS giữ nguyên tham số hiện tại.
-- Xử lý (đề xuất): hủy mã giá cũ, gán mã giá mới, bảo lưu tài khoản tiền và tài khoản Pool; bắt đầu ngay chu kỳ mới theo mã giá mới: trừ tài khoản tiền = tham số 11002, reset tài khoản 11000 = tham số 11003.
-
-**Request:** `POST http://ipaddress:port/processFlowManagement/v4/processFlow/`
-
-```json
-{
-  "processFlowSpecification": "ChangeMainProduct",
-  "characteristic": [
-    { "name": "msisdn", "value": "SL0000123456" },
-    { "name": "productExternalId", "value": "11000001" },
-    {
-      "name": "characteristicList",
-      "value": [
-        { "charSpecId": "11001", "stringValue": "LOCAL" },
-        { "charSpecId": "11002", "longValue": "2000000" },
-        { "charSpecId": "11003", "longValue": "1048576" }
-      ]
-    },
-    { "name": "partyCode", "value": "Doi chu ky goi chinh" },
-    { "name": "reserveBalance", "value": "Y" }
-  ]
-}
-```
-
-**Response:**
-
-```json
-{
-  "processFlowSpecification": "ChangeMainProduct",
+  "processFlowSpecification": "UpdateListParameter",
   "processFlowDate": "2026/11/15 10:00:00",
   "characteristic": [
     { "name": "errorCode", "value": "0" },
@@ -501,10 +435,12 @@ Với giải pháp tham số hóa, nghiệp vụ đổi gói chính gồm 2 trư
 | Tên trường | Ý nghĩa | Định dạng | Bắt buộc |
 |---|---|---|---|
 | msisdn | Định danh thuê bao | Xâu ký tự < 30 | Có |
-| productExternalId | Mã giá gói chính mới (11000000 / 11000001) | Long | Có |
-| characteristicList | Tham số gói chính mới (11001, 11002, 11003). Không truyền thì giữ nguyên tham số hiện tại | List | Không |
-| partyCode | Log giao dịch. OCS xuất ra CDR | String | Không |
-| reserveBalance | Bảo lưu tài khoản: Y - bảo lưu toàn bộ; B - bảo lưu các tài khoản khai báo cấu hình trên OCS | String | Có |
+| type | Cố định = 2 (chỉnh sửa tham số) | Int | Có |
+| characteristicList | Danh sách tham số cần thay đổi, truyền đủ 3 tham số 11001, 11002, 11003 | List | Có |
+| characteristicList.charSpecId | Id tham số: 11001 - loại gói; 11002 - số tiền trừ 1 chu kỳ; 11003 - lưu lượng 1 chu kỳ | String | Có |
+| characteristicList.productExternalId | Mã giá gói chính hiện tại của thuê bao (11000000 / 11000001) | Long | Có |
+| characteristicList.stringValue | Giá trị mới của tham số 11001: LOCAL / GLOBAL | String | Có (với 11001) |
+| characteristicList.longValue | Giá trị mới của tham số 11002 (VNĐ) / 11003 (theo đơn vị lưu lượng thống nhất) | Long ≥ 0 | Có (với 11002, 11003) |
 
 **Mô tả Output:**
 
@@ -517,17 +453,123 @@ Với giải pháp tham số hóa, nghiệp vụ đổi gói chính gồm 2 trư
 
 | Description | Mô tả |
 |---|---|
-| WS_OFFER_NOT_FOUND | Mã giá mới không tồn tại trên OCS |
-| WS_SAME_OFFER | Mã giá mới trùng mã giá hiện tại |
-| WS_WRONG_OFFER_TYPE | Mã giá truyền lên không phải gói chính |
-| WS_CHARACTERISTIC_INVALID | Giá trị tham số không hợp lệ |
-| BALANCE_NOT_ENOUGH | Tài khoản tiền không đủ để trừ cước chu kỳ mới |
+| WS_PRODUCT_NOT_EXIST | Thuê bao không có mã giá gói chính truyền lên |
+| WS_CHARACTERISTIC_INVALID | charSpecId không thuộc gói chính hoặc giá trị không hợp lệ |
+| WS_MULTI_PARAMETER_INSTANCE | Thuê bao đang có 2 bộ tham số, không cho phép thay đổi |
 
-#### 5.3. Truy vấn tham số gói cước chính
+#### 5.2. Thay đổi tham số gói cước chính có hiệu lực trong tương lai
 
-**Mô tả nghiệp vụ:** Tra cứu giá trị hiện tại của 3 tham số gói chính (11001, 11002, 11003) của thuê bao.
+**Mô tả nghiệp vụ:**
 
-**Request:** `POST http://ipaddress:port/processFlowManagement/v4/processFlow/`
+- Provisioning thực hiện tuần tự 2 bước, **phải nhận được response của bước trước mới gửi lệnh bước sau**:
+  - **Bước 1 - Chỉnh sửa hạn bộ tham số hiện tại:** gọi lệnh chỉnh sửa (`type = 2`), sửa `expDate` của bộ tham số hiện tại về cuối khoảng thời gian hiệu lực mong muốn (lúc 23:59:59). Tương tự mục 5.1, không truyền id; nếu thuê bao đang có 2 bộ tham số thì OCS trả lỗi.
+  - **Bước 2 - Thêm bộ tham số mới:** gọi lệnh thêm (`type = 1`) bộ 3 tham số mới, truyền charSpecId, mã giá gói chính, giá trị (stringValue / longValue) và `effDate` là thời điểm hiệu lực trong tương lai mong muốn. `effDate` phải sau `expDate` đã chỉnh sửa ở bước 1.
+- Sau khi thực hiện thành công, thuê bao có 2 bộ tham số: bộ hiện tại hiệu lực đến `expDate`, bộ mới hiệu lực từ `effDate`.
+- **Xử lý khi bước 1 thành công nhưng bước 2 lỗi:** Provisioning retry bước 2, hoặc gọi lại bước 1 với `expDate` vô hạn (2100/01/01 00:00:00) để khôi phục bộ tham số hiện tại.
+- **Khuyến nghị:** khi gia hạn, OCS dùng bộ tham số đang hiệu lực tại thời điểm gia hạn. Vì vậy `expDate` ở bước 1 và `effDate` ở bước 2 nên khớp với thời điểm kết thúc chu kỳ hiện tại của gói chính, để bộ tham số mới được áp dụng đúng từ chu kỳ mong muốn.
+
+**Bước 1 - Request:** `POST http://ipaddress:port/processFlowManagement/v4/processFlow`
+
+```json
+{
+  "processFlowSpecification": "UpdateListParameter",
+  "characteristic": [
+    { "name": "msisdn", "value": "SL0000123456" },
+    { "name": "type", "value": "2" },
+    {
+      "name": "characteristicList",
+      "value": [
+        { "charSpecId": "11001", "productExternalId": "11000000", "expDate": "2026/11/30 23:59:59" },
+        { "charSpecId": "11002", "productExternalId": "11000000", "expDate": "2026/11/30 23:59:59" },
+        { "charSpecId": "11003", "productExternalId": "11000000", "expDate": "2026/11/30 23:59:59" }
+      ]
+    }
+  ]
+}
+```
+
+**Bước 2 - Request:** `POST http://ipaddress:port/processFlowManagement/v4/processFlow`
+
+```json
+{
+  "processFlowSpecification": "UpdateListParameter",
+  "characteristic": [
+    { "name": "msisdn", "value": "SL0000123456" },
+    { "name": "type", "value": "1" },
+    {
+      "name": "characteristicList",
+      "value": [
+        { "charSpecId": "11001", "productExternalId": "11000000", "stringValue": "GLOBAL", "effDate": "2026/12/01 00:00:00" },
+        { "charSpecId": "11002", "productExternalId": "11000000", "longValue": "5000000", "effDate": "2026/12/01 00:00:00" },
+        { "charSpecId": "11003", "productExternalId": "11000000", "longValue": "2097152", "effDate": "2026/12/01 00:00:00" }
+      ]
+    }
+  ]
+}
+```
+
+**Response (bước 1, bước 2):**
+
+```json
+{
+  "processFlowSpecification": "UpdateListParameter",
+  "processFlowDate": "2026/11/15 10:00:00",
+  "characteristic": [
+    { "name": "errorCode", "value": "0" },
+    { "name": "description", "value": "Success" }
+  ]
+}
+```
+
+**Mô tả Input bước 1:**
+
+| Tên trường | Ý nghĩa | Định dạng | Bắt buộc |
+|---|---|---|---|
+| msisdn | Định danh thuê bao | Xâu ký tự < 30 | Có |
+| type | Cố định = 2 (chỉnh sửa tham số) | Int | Có |
+| characteristicList | Danh sách tham số, truyền đủ 3 tham số 11001, 11002, 11003 | List | Có |
+| characteristicList.charSpecId | Id tham số: 11001 / 11002 / 11003 | String | Có |
+| characteristicList.productExternalId | Mã giá gói chính hiện tại của thuê bao (11000000 / 11000001) | Long | Có |
+| characteristicList.expDate | Hạn mới của bộ tham số hiện tại (cuối khoảng hiệu lực mong muốn, lúc 23:59:59) | yyyy/MM/dd HH:mm:ss | Có |
+
+**Mô tả Input bước 2:**
+
+| Tên trường | Ý nghĩa | Định dạng | Bắt buộc |
+|---|---|---|---|
+| msisdn | Định danh thuê bao | Xâu ký tự < 30 | Có |
+| type | Cố định = 1 (thêm bộ tham số) | Int | Có |
+| characteristicList | Bộ tham số mới, truyền đủ 3 tham số 11001, 11002, 11003 | List | Có |
+| characteristicList.charSpecId | Id tham số: 11001 / 11002 / 11003 | String | Có |
+| characteristicList.productExternalId | Mã giá gói chính của thuê bao (11000000 / 11000001) | Long | Có |
+| characteristicList.stringValue | Giá trị tham số 11001: LOCAL / GLOBAL | String | Có (với 11001) |
+| characteristicList.longValue | Giá trị tham số 11002 (VNĐ) / 11003 (theo đơn vị lưu lượng thống nhất) | Long ≥ 0 | Có (với 11002, 11003) |
+| characteristicList.effDate | Thời điểm bắt đầu hiệu lực của bộ tham số mới, phải sau expDate đã chỉnh sửa ở bước 1 | yyyy/MM/dd HH:mm:ss | Có |
+
+**Mô tả Output (bước 1, bước 2):**
+
+| Tên trường | Ý nghĩa | Định dạng |
+|---|---|---|
+| errorCode | Mã lỗi | Int |
+| description | Mô tả lỗi | String |
+
+**Mã lỗi:** Mã lỗi chung (mục 18) và:
+
+| Description | Mô tả |
+|---|---|
+| WS_PRODUCT_NOT_EXIST | Thuê bao không có mã giá gói chính truyền lên |
+| WS_CHARACTERISTIC_INVALID | charSpecId không thuộc gói chính hoặc giá trị không hợp lệ |
+| WS_MULTI_PARAMETER_INSTANCE | Thuê bao đang có 2 bộ tham số (bước 1, bước 2) |
+| WS_EFFDATE_INVALID | effDate của bộ tham số mới không sau expDate của bộ tham số hiện tại hoặc trùng khoảng hiệu lực (bước 2) |
+
+#### 5.3. Truy vấn và chỉnh sửa tham số bất kỳ (xử lý sự cố)
+
+Dùng khi cần kiểm tra hoặc xử lý sự cố trên tham số gói chính (ví dụ sửa sai giá trị, sửa sai thời gian hiệu lực của bộ tham số chờ hiệu lực). Provisioning truy vấn để lấy id của từng tham số (mục 5.3.1), sau đó chỉnh sửa theo id (mục 5.3.2).
+
+##### 5.3.1. Truy vấn tham số gói cước chính
+
+**Mô tả nghiệp vụ:** Trả về toàn bộ tham số gói chính của thuê bao (gồm cả bộ tham số đang hiệu lực và bộ tham số chờ hiệu lực trong tương lai), mỗi tham số kèm id để phục vụ chỉnh sửa.
+
+**Request:** `POST http://ipaddress:port/processFlowManagement/v4/processFlow`
 
 ```json
 {
@@ -551,9 +593,12 @@ Với giải pháp tham số hóa, nghiệp vụ đổi gói chính gồm 2 trư
     {
       "name": "characteristicList",
       "value": [
-        { "charSpecId": "11001", "stringValue": "LOCAL", "state": "1" },
-        { "charSpecId": "11002", "longValue": "2000000", "state": "1" },
-        { "charSpecId": "11003", "longValue": "1048576", "state": "1" }
+        { "id": "70010001", "charSpecId": "11001", "productExternalId": "11000000", "stringValue": "LOCAL", "state": "1", "effDate": "2026/11/01 10:00:00", "expDate": "2026/11/30 23:59:59" },
+        { "id": "70010002", "charSpecId": "11002", "productExternalId": "11000000", "longValue": "2000000", "state": "1", "effDate": "2026/11/01 10:00:00", "expDate": "2026/11/30 23:59:59" },
+        { "id": "70010003", "charSpecId": "11003", "productExternalId": "11000000", "longValue": "1048576", "state": "1", "effDate": "2026/11/01 10:00:00", "expDate": "2026/11/30 23:59:59" },
+        { "id": "70010004", "charSpecId": "11001", "productExternalId": "11000000", "stringValue": "GLOBAL", "state": "1", "effDate": "2026/12/01 00:00:00", "expDate": "2100/01/01 00:00:00" },
+        { "id": "70010005", "charSpecId": "11002", "productExternalId": "11000000", "longValue": "5000000", "state": "1", "effDate": "2026/12/01 00:00:00", "expDate": "2100/01/01 00:00:00" },
+        { "id": "70010006", "charSpecId": "11003", "productExternalId": "11000000", "longValue": "2097152", "state": "1", "effDate": "2026/12/01 00:00:00", "expDate": "2100/01/01 00:00:00" }
       ]
     }
   ]
@@ -565,7 +610,7 @@ Với giải pháp tham số hóa, nghiệp vụ đổi gói chính gồm 2 trư
 | Tên trường | Ý nghĩa | Định dạng | Bắt buộc |
 |---|---|---|---|
 | msisdn | Định danh thuê bao | Xâu ký tự < 30 | Có |
-| type | Cố định = 0 | Int | Có |
+| type | Cố định = 0 (truy vấn) | Int | Có |
 
 **Mô tả Output:**
 
@@ -573,11 +618,81 @@ Với giải pháp tham số hóa, nghiệp vụ đổi gói chính gồm 2 trư
 |---|---|---|
 | errorCode | Mã lỗi | Int |
 | description | Mô tả lỗi | String |
-| characteristicList.charSpecId | Id tham số (11001, 11002, 11003) | String |
-| characteristicList.stringValue / longValue | Giá trị tham số | String / Long |
-| characteristicList.state | Trạng thái tham số (1 - hiệu lực) | Int |
+| characteristicList | Danh sách tham số gói chính của thuê bao | List |
+| characteristicList.id | Id của tham số trên OCS, dùng để chỉnh sửa tại mục 5.3.2 | Long |
+| characteristicList.charSpecId | Id loại tham số: 11001 / 11002 / 11003 | String |
+| characteristicList.productExternalId | Mã giá gói chính | Long |
+| characteristicList.stringValue | Giá trị tham số 11001 | String |
+| characteristicList.longValue | Giá trị tham số 11002 / 11003 | Long |
+| characteristicList.state | Trạng thái tham số | Int |
+| characteristicList.effDate / expDate | Thời gian bắt đầu / kết thúc hiệu lực của tham số | yyyy/MM/dd HH:mm:ss |
 
 **Mã lỗi:** Mã lỗi chung (mục 18).
+
+##### 5.3.2. Chỉnh sửa tham số theo id
+
+**Mô tả nghiệp vụ:** Chỉnh sửa 1 hoặc nhiều tham số theo id lấy từ lệnh truy vấn (mục 5.3.1). Chỉ thay đổi các thuộc tính được truyền lên: giá trị (stringValue / longValue), effDate, expDate, mã giá gói chính.
+
+**Request:** `POST http://ipaddress:port/processFlowManagement/v4/processFlow`
+
+```json
+{
+  "processFlowSpecification": "UpdateListParameter",
+  "characteristic": [
+    { "name": "msisdn", "value": "SL0000123456" },
+    { "name": "type", "value": "2" },
+    {
+      "name": "characteristicList",
+      "value": [
+        { "id": "70010005", "charSpecId": "11002", "productExternalId": "11000000", "longValue": "4500000", "effDate": "2026/12/01 00:00:00", "expDate": "2100/01/01 00:00:00" }
+      ]
+    }
+  ]
+}
+```
+
+**Response:**
+
+```json
+{
+  "processFlowSpecification": "UpdateListParameter",
+  "processFlowDate": "2026/11/15 10:00:00",
+  "characteristic": [
+    { "name": "errorCode", "value": "0" },
+    { "name": "description", "value": "Success" }
+  ]
+}
+```
+
+**Mô tả Input:**
+
+| Tên trường | Ý nghĩa | Định dạng | Bắt buộc |
+|---|---|---|---|
+| msisdn | Định danh thuê bao | Xâu ký tự < 30 | Có |
+| type | Cố định = 2 (chỉnh sửa tham số) | Int | Có |
+| characteristicList | Danh sách tham số cần chỉnh sửa | List | Có |
+| characteristicList.id | Id của tham số cần chỉnh sửa (lấy từ mục 5.3.1) | Long | Có |
+| characteristicList.charSpecId | Id loại tham số: 11001 / 11002 / 11003 | String | Có |
+| characteristicList.productExternalId | Mã giá gói chính | Long | Có |
+| characteristicList.stringValue | Giá trị mới của tham số 11001 | String | Không |
+| characteristicList.longValue | Giá trị mới của tham số 11002 / 11003 | Long ≥ 0 | Không |
+| characteristicList.effDate | Thời gian bắt đầu hiệu lực mới | yyyy/MM/dd HH:mm:ss | Không |
+| characteristicList.expDate | Thời gian kết thúc hiệu lực mới | yyyy/MM/dd HH:mm:ss | Không |
+
+**Mô tả Output:**
+
+| Tên trường | Ý nghĩa | Định dạng |
+|---|---|---|
+| errorCode | Mã lỗi | Int |
+| description | Mô tả lỗi | String |
+
+**Mã lỗi:** Mã lỗi chung (mục 18) và:
+
+| Description | Mô tả |
+|---|---|
+| WS_CHARACTERISTIC_NOT_FOUND | Không tồn tại tham số với id truyền lên |
+| WS_CHARACTERISTIC_INVALID | Giá trị tham số không hợp lệ |
+| WS_EFFDATE_INVALID | effDate / expDate không hợp lệ hoặc trùng khoảng hiệu lực với bộ tham số khác |
 
 ---
 
